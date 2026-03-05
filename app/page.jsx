@@ -49,6 +49,7 @@ import { fetchFundData, fetchLatestRelease, fetchShanghaiIndexDate, fetchSmartFu
 import packageJson from '../package.json';
 import PcFundTable from './components/PcFundTable';
 import MobileFundTable from './components/MobileFundTable';
+import { useFundFuzzyMatcher } from './hooks/useFundFuzzyMatcher';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -1173,6 +1174,7 @@ export default function HomePage() {
   const abortScanRef = useRef(false); // 终止扫描标记
   const fileInputRef = useRef(null);
   const ocrWorkerRef = useRef(null);
+  const { resolveFundCodeByFuzzy } = useFundFuzzyMatcher();
 
   const handleScanClick = () => {
     setScanModalOpen(true);
@@ -1326,6 +1328,15 @@ export default function HomePage() {
               const found = list[0];
               if (found && found.CODE) {
                 allCodes.add(found.CODE);
+              }
+            } else {
+              // 使用 fuse.js 读取 Public 中的 allFunds 数据进行模糊匹配，补充搜索接口的不足
+              try {
+                const fuzzyCode = await resolveFundCodeByFuzzy(name);
+                if (fuzzyCode) {
+                  allCodes.add(fuzzyCode);
+                }
+              } catch (e) {
               }
             }
           } catch (e) {
